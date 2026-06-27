@@ -93,11 +93,44 @@ def delete_user(user_id: int, current_user: str = Depends(get_current_user), db:
     return {"message": "User Deleted Successfully"}
 
 #Auth Resgister
-@app.post("/register")
-def register(user: schemas.UserCreate,
-             db: Session = Depends(get_db)):
+# @app.post("/register")
+# def register(user: schemas.UserCreate,
+#              db: Session = Depends(get_db)):
 
-    # Check username already exists
+#     # Check username already exists
+#     existing_user = db.query(models.User).filter(
+#         models.User.username == user.username
+#     ).first()
+
+#     if existing_user:
+#         raise HTTPException(
+#             status_code=400,
+#             detail="Username already exists"
+#         )
+
+#     new_user = models.User(
+#         name=user.name,
+#         age=user.age,
+#         username=user.username,
+#         password=hash_password(user.password)
+#     )
+
+#     db.add(new_user)
+#     db.commit()
+#     db.refresh(new_user)
+
+#     return {
+#         "message": "User Registered Successfully"
+#     }
+
+
+@app.post("/register")
+def register(
+    user: schemas.UserCreate,
+    db: Session = Depends(get_db)
+):
+
+    # Username already exists
     existing_user = db.query(models.User).filter(
         models.User.username == user.username
     ).first()
@@ -105,7 +138,14 @@ def register(user: schemas.UserCreate,
     if existing_user:
         raise HTTPException(
             status_code=400,
-            detail="Username already exists"
+            detail="Username already exists."
+        )
+
+    # Name cannot contain numbers
+    if not user.name.replace(" ", "").isalpha():
+        raise HTTPException(
+            status_code=400,
+            detail="Name should contain only alphabets."
         )
 
     new_user = models.User(
@@ -120,9 +160,8 @@ def register(user: schemas.UserCreate,
     db.refresh(new_user)
 
     return {
-        "message": "User Registered Successfully"
+        "message": "User registered successfully."
     }
-
 
 # @app.post("/login")
 # def login(user: schemas.Login,
