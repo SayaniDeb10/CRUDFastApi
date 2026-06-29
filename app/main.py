@@ -1,18 +1,16 @@
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from fastapi.security import OAuth2PasswordRequestForm
-
 from app.database import SessionLocal, engine
 from app import models, schemas
 from app.auth import hash_password
 from app.auth import verify_password, create_access_token
-
 from app.auth import get_current_user
+from typing import List
 
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
-
 
 def get_db():
     db = SessionLocal()
@@ -21,30 +19,8 @@ def get_db():
     finally:
         db.close()
 
-
-# @app.post("/users")
-# def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
-
-#     new_user = models.User(
-#         name=user.name,
-#         age=user.age
-#     )
-
-#     db.add(new_user)
-#     db.commit()
-#     db.refresh(new_user)
-
-#     return {
-#         "message": "User Created Successfully",
-#         "user": new_user
-#     }
-
-
-# @app.get("/users")
-# def get_users(db: Session = Depends(get_db)):
-#     return db.query(models.User).all()
-
-@app.get("/users")
+# View User
+@app.get("/users", response_model=List[schemas.UserResponse])
 def get_users(
     current_user: str = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -52,7 +28,7 @@ def get_users(
 
     return db.query(models.User).all()
 
-
+# Edit User
 @app.put("/users/{user_id}")
 def update_user(
     user_id: int, 
@@ -70,13 +46,16 @@ def update_user(
 
     db_user.name = user.name
     db_user.age = user.age
-
+    db_user.department = user.department
+    db_user.skills = user.skills
+    db_user.role = user.role
+    
     db.commit()
     db.refresh(db_user)
 
     return db_user
 
-
+# Delete User
 @app.delete("/users/{user_id}")
 def delete_user(user_id: int, current_user: str = Depends(get_current_user), db: Session = Depends(get_db)):
 
@@ -92,38 +71,7 @@ def delete_user(user_id: int, current_user: str = Depends(get_current_user), db:
 
     return {"message": "User Deleted Successfully"}
 
-#Auth Resgister
-# @app.post("/register")
-# def register(user: schemas.UserCreate,
-#              db: Session = Depends(get_db)):
-
-#     # Check username already exists
-#     existing_user = db.query(models.User).filter(
-#         models.User.username == user.username
-#     ).first()
-
-#     if existing_user:
-#         raise HTTPException(
-#             status_code=400,
-#             detail="Username already exists"
-#         )
-
-#     new_user = models.User(
-#         name=user.name,
-#         age=user.age,
-#         username=user.username,
-#         password=hash_password(user.password)
-#     )
-
-#     db.add(new_user)
-#     db.commit()
-#     db.refresh(new_user)
-
-#     return {
-#         "message": "User Registered Successfully"
-#     }
-
-
+# Resgister User
 @app.post("/register")
 def register(
     user: schemas.UserCreate,
@@ -152,7 +100,10 @@ def register(
         name=user.name,
         age=user.age,
         username=user.username,
-        password=hash_password(user.password)
+        password=hash_password(user.password),
+        department=user.department,
+        skills=user.skills,
+        role=user.role
     )
 
     db.add(new_user)
@@ -162,37 +113,14 @@ def register(
     return {
         "message": "User registered successfully."
     }
-
-# @app.post("/login")
-# def login(user: schemas.Login,
-#           db: Session = Depends(get_db)):
-
-#     db_user = db.query(models.User).filter(
-#         models.User.username == user.username
-#     ).first()
-
-#     if db_user is None:
-#         raise HTTPException(
-#             status_code=401,
-#             detail="Invalid Username or Password"
-#         )
-
-#     if not verify_password(user.password, db_user.password):
-#         raise HTTPException(
-#             status_code=401,
-#             detail="Invalid Username or Password"
-#         )
-
-#     token = create_access_token(
-#         {
-#             "sub": db_user.username
-#         }
-#     )
-
+# # bydefault page 
+# @app.get("/")
+# def home(db:Session = Depends(get_db)):
 #     return {
-#         "access_token": token,
-#         "token_type": "Bearer"
-#     }
+#         "message": "Welcome to the FastAPI CRUD Application!"
+#         }
+         
+# Login User
 @app.post("/login")
 def login(
     form_data: OAuth2PasswordRequestForm = Depends(),

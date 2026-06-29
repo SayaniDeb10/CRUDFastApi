@@ -8,4 +8,7 @@ class User(Base):
     name = Column(String(100))
     age = Column(Integer)
     username = Column(String(100), unique=True)
-    password = Column(String(255))
+    password = Column(String(255)),
+    department = Column(String(100)),
+    role = Column(String(50)),
+    skills = Column(String(255))
